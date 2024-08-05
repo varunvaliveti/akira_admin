@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from "react";
@@ -26,25 +27,40 @@ import Delete from "../custom ui/Delete";
 const formSchema = z.object({
   title: z.string().min(2).max(20),
   description: z.string().min(2).max(500).trim(),
-  image: z.string().url(),
+  media: z.array(z.string()),
+  category: z.string(),
+  collections: z.array(z.string()),
+  tags: z.array(z.string()),
+  sizes: z.array(z.string()),
+  colors: z.array(z.string()),
+  price: z.coerce.number().min(0.1),
+  expense: z.coerce.number().min(0.1)
 });
 
-interface CollectionFormProps {
-  initialData?: CollectionType | null;
+interface ProductFormProps {
+  initialData?: ProductType | null;
 }
 
-export const CollectionForm: React.FC<CollectionFormProps> = ({initialData,}) => {
+export const ProductForm: React.FC<ProductFormProps> = ({initialData,}) => {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
   const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema), 
     defaultValues: initialData
       ? initialData
       : {
           title: "",
           description: "",
-          image: "",
+          media: [],
+          category: "",
+          collections: [],
+          tags: [],
+          sizes: [],
+          colors: [],
+          price: 0.1,
+          expense: 0.1,
+
         },
   });
 
@@ -60,8 +76,8 @@ export const CollectionForm: React.FC<CollectionFormProps> = ({initialData,}) =>
     try {
       setLoading(true);
       const url = initialData
-        ? `/api/collections/${initialData._id}`
-        : "/api/collections";
+        ? `/api/products/${initialData._id}`
+        : "/api/products";
       const res = await fetch(url, {
         method: "POST",
         body: JSON.stringify(values),
@@ -69,14 +85,14 @@ export const CollectionForm: React.FC<CollectionFormProps> = ({initialData,}) =>
       if (res.ok) {
         setLoading(false);
         toast.success(
-          `Collection ${initialData ? "updated" : "created"} created`
+          `Product ${initialData ? "updated" : "created"} created`
         );
-        window.location.href = "/collections";
+        window.location.href = "/products";
 
-        router.push("/collections");
+        router.push("/products");
       }
     } catch (err) {
-      console.log("[CollectionForm_POST]", err);
+      console.log("products_POST]", err);
       toast.error("Somethign went wrong! Please try again.");
     }
   };
@@ -84,11 +100,11 @@ export const CollectionForm: React.FC<CollectionFormProps> = ({initialData,}) =>
     <div className="p-10">
       {initialData ? (
         <div className="flex items-center justify-between">
-          <p className="text-heading2-bold">Edit Collection</p>
+          <p className="text-heading2-bold">Edit Product</p>
           <Delete id={initialData._id}/>
         </div>
       ) : (
-        <p className="text-heading2-bold"> Create Collection </p>
+        <p className="text-heading2-bold"> Create Product </p>
       )}
 
       <Separator className="bg-grey-1 mt-4 mb-7" />
@@ -122,16 +138,58 @@ export const CollectionForm: React.FC<CollectionFormProps> = ({initialData,}) =>
           />
           <FormField
             control={form.control}
-            name="image"
+            name="media" 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Image</FormLabel>
                 <FormControl>
                   <ImageUpload
-                    value={field.value ? [field.value] : []}
-                    onChange={(url) => field.onChange(url)}
-                    onRemove={() => field.onChange("")}
+                    value={field.value}
+                    onChange={(url) => field.onChange(...field.value, url)}
+                    onRemove={(url) => field.onChange([...field.value.filter((image) => image!== url)])}
                   />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="price"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Price ($)</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="Price" {...field} onKeyDown={handleKeypress}/>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="expense"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Expense</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="Title" {...field} onKeyDown={handleKeypress}/>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="category"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Category</FormLabel>
+                <FormControl>
+                  <Input placeholder="Category" {...field} onKeyDown={handleKeypress}/>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -155,4 +213,4 @@ export const CollectionForm: React.FC<CollectionFormProps> = ({initialData,}) =>
   );
 };
 
-export default CollectionForm;
+export default ProductForm;
